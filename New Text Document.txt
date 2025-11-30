@@ -1,0 +1,54 @@
+#include <HardwareSerial.h>
+
+// use UART2 on ESP32
+HardwareSerial LoRaSerial(2);
+LoraSerial.begin(9600,Serial_8IN, RX_PIN, TX_PIN);
+
+void setup() {
+  Serial.begin(115200);
+
+  // RX = 16, TX = 17 (you can change if needed)
+  LoRaSerial.begin(9600, SERIAL_8N1, 16, 17);
+
+  Serial.println("ESP32 LoRa UART Ready");
+}
+
+void loop() {
+  // send data to LoRa
+  LoRaSerial.println("Hello");
+
+  // read data from LoRa
+  if (LoRaSerial.available()) {
+    String data = LoRaSerial.readStringUntil('\n');
+    Serial.print("Received: ");
+    Serial.println(data);
+  }
+
+  delay(1000);
+}
+
+
+
+erre:Arduino: 1.8.19 (Linux), Board: "ESP32 Dev Module, Disabled, Disabled, Default 4MB with spiffs (1.2MB APP/1.5MB SPIFFS), 240MHz (WiFi/BT), QIO, 80MHz, 4MB (32Mb), 921600, Core 1, Core 1, None, Disabled, Disabled"
+
+
+
+
+
+
+
+
+
+
+
+[PYI-64256:ERROR] Failed to load Python shared library '/tmp/_MEIGSv9lu/libpython3.13.so': dlopen: /lib/x86_64-linux-gnu/libpthread.so.0: version `GLIBC_2.30' not found (required by /tmp/_MEIGSv9lu/libpython3.13.so)
+exit status 255
+/snap/arduino/85/arduino-builder returned 255
+Error compiling for board ESP32 Dev Module.
+
+
+This report would have more information with
+"Show verbose output during compilation"
+option enabled in File -> Preferences.
+
+

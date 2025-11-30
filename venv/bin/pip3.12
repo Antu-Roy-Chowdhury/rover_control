@@ -1,4 +1,4 @@
-#!/home/nightfury/Files/Zenith/venv/bin/python3
+#!/home/nightfury/Files/Zenith/rover_control/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

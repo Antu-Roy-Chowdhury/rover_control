@@ -1,0 +1,170 @@
+// ===== MOTOR PINS =====
+#define L1_FWD 16
+#define L1_BWD 17
+#define L2_FWD 18
+#define L2_BWD 19
+
+#define R1_FWD 14
+#define R1_BWD 12
+#define R2_FWD 27
+#define R2_BWD 26
+
+// ===== PWM CONFIG =====
+#define PWM_FREQ 5000
+#define PWM_RES 8
+
+// ===== PWM CHANNELS =====
+#define CH_L1_FWD 0
+#define CH_L1_BWD 1
+#define CH_L2_FWD 2
+#define CH_L2_BWD 3
+#define CH_R1_FWD 4
+#define CH_R1_BWD 5
+#define CH_R2_FWD 6
+#define CH_R2_BWD 7
+
+int motorSpeed = 150;
+String command = "";
+
+// ====== SETUP ======
+void setup() {
+  Serial.begin(115200);
+  Serial.println("ESP32 Motor Control Ready!");
+
+  // Setup PWM
+  ledcSetup(CH_L1_FWD, PWM_FREQ, PWM_RES); ledcAttachPin(L1_FWD, CH_L1_FWD);
+  ledcSetup(CH_L1_BWD, PWM_FREQ, PWM_RES); ledcAttachPin(L1_BWD, CH_L1_BWD);
+  ledcSetup(CH_L2_FWD, PWM_FREQ, PWM_RES); ledcAttachPin(L2_FWD, CH_L2_FWD);
+  ledcSetup(CH_L2_BWD, PWM_FREQ, PWM_RES); ledcAttachPin(L2_BWD, CH_L2_BWD);
+
+  ledcSetup(CH_R1_FWD, PWM_FREQ, PWM_RES); ledcAttachPin(R1_FWD, CH_R1_FWD);
+  ledcSetup(CH_R1_BWD, PWM_FREQ, PWM_RES); ledcAttachPin(R1_BWD, CH_R1_BWD);
+  ledcSetup(CH_R2_FWD, PWM_FREQ, PWM_RES); ledcAttachPin(R2_FWD, CH_R2_FWD);
+  ledcSetup(CH_R2_BWD, PWM_FREQ, PWM_RES); ledcAttachPin(R2_BWD, CH_R2_BWD);
+
+  stopMotors();
+}
+
+// ====== MOTOR HELPERS ======
+void stopMotors() {
+  for (int ch = 0; ch <= 7; ch++) ledcWrite(ch, 0);
+}
+
+void moveForward(int spd) {
+  ledcWrite(CH_L1_FWD, spd); ledcWrite(CH_L1_BWD, 0);
+  ledcWrite(CH_L2_FWD, spd); ledcWrite(CH_L2_BWD, 0);
+  ledcWrite(CH_R1_FWD, spd); ledcWrite(CH_R1_BWD, 0);
+  ledcWrite(CH_R2_FWD, spd); ledcWrite(CH_R2_BWD, 0);
+}
+
+void moveBackward(int spd) {
+  ledcWrite(CH_L1_FWD, 0); ledcWrite(CH_L1_BWD, spd);
+  ledcWrite(CH_L2_FWD, 0); ledcWrite(CH_L2_BWD, spd);
+  ledcWrite(CH_R1_FWD, 0); ledcWrite(CH_R1_BWD, spd);
+  ledcWrite(CH_R2_FWD, 0); ledcWrite(CH_R2_BWD, spd);
+}
+
+void turnLeft(int spd) {
+  ledcWrite(CH_L1_FWD, 0); ledcWrite(CH_L1_BWD, spd);
+  ledcWrite(CH_L2_FWD, 0); ledcWrite(CH_L2_BWD, spd);
+  ledcWrite(CH_R1_FWD, spd); ledcWrite(CH_R1_BWD, 0);
+  ledcWrite(CH_R2_FWD, spd); ledcWrite(CH_R2_BWD, 0);
+}
+
+void turnRight(int spd) {
+  ledcWrite(CH_L1_FWD, spd); ledcWrite(CH_L1_BWD, 0);
+  ledcWrite(CH_L2_FWD, spd); ledcWrite(CH_L2_BWD, 0);
+  ledcWrite(CH_R1_FWD, 0); ledcWrite(CH_R1_BWD, spd);
+  ledcWrite(CH_R2_FWD, 0); ledcWrite(CH_R2_BWD, spd);
+}
+
+// ====== COMMAND PARSER ======
+void handleCommand(String input) {
+  input.trim();
+  input.toLowerCase();   // now "LF" → "lf"
+
+  if (input.indexOf(':') == -1) {
+    Serial.println("Invalid format. Expected DIR:SPEED");
+    return;
+  }
+
+  String dir = input.substring(0, input.indexOf(':'));
+  int spd = input.substring(input.indexOf(':') + 1).toInt();
+
+  if (spd < 0 || spd > 255) spd = motorSpeed;
+  motorSpeed = spd;
+
+  // ------------ BASIC DIRECTIONS -------------
+  if (dir == "f") {
+    moveForward(spd);
+    Serial.printf("FORWARD @ %d\n", spd);
+  }
+  else if (dir == "b") {
+    moveBackward(spd);
+    Serial.printf("BACKWARD @ %d\n", spd);
+  }
+  else if (dir == "l") {
+    turnLeft(spd);
+    Serial.printf("LEFT TURN @ %d\n", spd);
+  }
+  else if (dir == "r") {
+    turnRight(spd);
+    Serial.printf("RIGHT TURN @ %d\n", spd);
+  }
+  
+  // ------------ DIAGONALS -------------
+  else if (dir == "lf") {       // Left + Forward
+    ledcWrite(CH_L1_FWD, spd / 2); ledcWrite(CH_L1_BWD, 0);
+    ledcWrite(CH_L2_FWD, spd / 2); ledcWrite(CH_L2_BWD, 0);
+    ledcWrite(CH_R1_FWD, spd);    ledcWrite(CH_R1_BWD, 0);
+    ledcWrite(CH_R2_FWD, spd);    ledcWrite(CH_R2_BWD, 0);
+    Serial.printf("LEFT-FORWARD @ %d\n", spd);
+  }
+  else if (dir == "rf") {       // Right + Forward
+    ledcWrite(CH_L1_FWD, spd);    ledcWrite(CH_L1_BWD, 0);
+    ledcWrite(CH_L2_FWD, spd);    ledcWrite(CH_L2_BWD, 0);
+    ledcWrite(CH_R1_FWD, spd / 2); ledcWrite(CH_R1_BWD, 0);
+    ledcWrite(CH_R2_FWD, spd / 2); ledcWrite(CH_R2_BWD, 0);
+    Serial.printf("RIGHT-FORWARD @ %d\n", spd);
+  }
+  else if (dir == "lb") {       // Left + Backward
+    ledcWrite(CH_L1_FWD, 0); ledcWrite(CH_L1_BWD, spd / 2);
+    ledcWrite(CH_L2_FWD, 0); ledcWrite(CH_L2_BWD, spd / 2);
+    ledcWrite(CH_R1_FWD, 0); ledcWrite(CH_R1_BWD, spd);
+    ledcWrite(CH_R2_FWD, 0); ledcWrite(CH_R2_BWD, spd);
+    Serial.printf("LEFT-BACKWARD @ %d\n", spd);
+  }
+  else if (dir == "rb") {       // Right + Backward
+    ledcWrite(CH_L1_FWD, 0); ledcWrite(CH_L1_BWD, spd);
+    ledcWrite(CH_L2_FWD, 0); ledcWrite(CH_L2_BWD, spd);
+    ledcWrite(CH_R1_FWD, 0); ledcWrite(CH_R1_BWD, spd / 2);
+    ledcWrite(CH_R2_FWD, 0); ledcWrite(CH_R2_BWD, spd / 2);
+    Serial.printf("RIGHT-BACKWARD @ %d\n", spd);
+  }
+
+  // ------------ STOP -------------
+  else if (dir == "stop") {
+    stopMotors();
+    Serial.println("STOP");
+  }
+
+  else {
+    Serial.print("Unknown direction: ");
+    Serial.println(dir);
+  }
+}
+
+
+// ====== MAIN LOOP ======
+void loop() {
+  if (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n') {
+      if (command.length() > 0) {
+        handleCommand(command);
+        command = "";
+      }
+    } 
+    else command += c;
+  }
+}

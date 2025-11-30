@@ -1,0 +1,77 @@
+sudo apt update
+sudo apt install -y gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+
+
+v4l2-ctl --list-devices
+
+Integrated Camera: Integrated C (usb-0000:00:14.0-8):
+	/dev/video0
+	/dev/video1
+	/dev/media0
+
+gst-launch-1.0 v4l2src device=/dev/video0 ! videoconvert ! jpegenc quality=30 ! multipartmux boundary=frame ! tcpserversink host=0.0.0.0 port=8080
+
+gst-launch-1.0 v4l2src device=/dev/video2 ! videoconvert ! jpegenc quality=30 ! multipartmux boundary=frame ! tcpserversink host=0.0.0.0 port=8081
+
+ip route get 8.8.8.8 | awk '{print $7}' | head -1
+
+
+
+gst-launch-1.0 -q v4l2src device=/dev/video0 ! jpegenc ! multipartmux boundary="--myboundary" ! tcpserversink host=0.0.0.0 port=8080
+
+
+
+
+
+# Stop any old gst-launch processes first
+killall gst-launch-1.0
+
+# Built-in camera → port 8080
+gst-launch-1.0 -v v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! multipartmux boundary=spionisto ! tcpserversink host=0.0.0.0 port=8080
+
+---------------------------------------------------------------------
+# 1. Install the tiny webserver + viewer (once)
+sudo apt update  
+sudo apt install -y python3-pip python3-opencv v4l2loopback-dkms
+pip3 install --user opencv-python flask
+
+
+
+
+# 2. Create the streamer script (copy all lines at once)
+cat > ~/dualcam.py << 'EOF'
+from flask import Flask, Response
+import cv2
+
+app = Flask(__name__)
+
+def gen_frames(cam_id):
+    cap = cv2.VideoCapture(cam_id)
+    cap.set(3, 1280)
+    cap.set(4, 720)
+    cap.set(5, 30)
+    while True:
+        ret, frame = cap.read()
+        if not ret: break
+        _, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+
+@app.route('/cam0')
+def cam0(): return Response(gen_frames(0), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/cam1')
+def cam1(): return Response(gen_frames(2), mimetype='multipart/x-mixed-replace; boundary=frame')   # change 2 → your USB cam
+
+@app.route('/')
+def index():
+    return '''
+    <h1>Both cameras side-by-side</h1>
+    <img src="/cam0" width="48%"> <img src="/cam1" width="48%">
+    '''
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, threaded=True)
+EOF
+
+# 3. Run it
+python3 ~/dualcam.py

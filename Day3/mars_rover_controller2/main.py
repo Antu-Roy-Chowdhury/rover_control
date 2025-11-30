@@ -59,12 +59,15 @@ class MarsRoverController(QMainWindow):
 
         self.joystick.command_signal.connect(serial.send_command)
 
+# ...existing code...
     def load_bg(self):
         p = QPixmap("mars_bg.jpg")
         if p.isNull():
-            p = QPixmap(1920, 1080).fill(Qt.GlobalColor.darkRed)
+            p = QPixmap(1920, 1080)
+            p.fill(Qt.GlobalColor.darkRed)
         self.bg.setPixmap(p.scaled(self.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding))
         self.bg.setGeometry(0, 0, self.width(), self.height())
+# ...existing code...
 
     def resizeEvent(self, event):
         self.load_bg()

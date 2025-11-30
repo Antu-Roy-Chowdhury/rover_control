@@ -112,10 +112,13 @@ class JoystickWidget(QWidget):
         self.update()
 
         # === 8-DIRECTION LOGIC ===
-        speed = int((dist / self.radius) * 255)
-        if speed < 35:
+        speed = int((dist / self.radius) * 238)
+        if speed < 1:
             self.command_signal.emit("STOP:0")
             return
+        if speed > 255:
+            speed = 255
+        
 
         angle_deg = (math.degrees(math.atan2(dy, dx)) + 360) % 360
 

@@ -19,12 +19,12 @@ port = auto_detect_arduino()
 if port:
     try:
         ser = serial.Serial(port, 115200, timeout=1)
-        print(f"Arduino AUTO DETECTED & CONNECTED on {port}")
+        print(f"Controller AUTO DETECTED & CONNECTED on {port}")
     except Exception as e:
-        print(f"Arduino found but failed to connect: {e}")
+        print(f"Controller found but failed to connect: {e}")
         ser = None
 else:
-    print("No Arduino detected → Commands will print only")
+    print("No Controller detected → Commands will print only")
 
 def send_command(cmd: str):
     timestamp = datetime.now().strftime("%H:%M:%S")

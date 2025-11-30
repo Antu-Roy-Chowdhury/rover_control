@@ -5,7 +5,7 @@ import re
 
 # CHANGE THESE TWO LINES ONLY
 RECEIVER_PORT = '/dev/ttyUSB0'   # LoRa ESP32
-MOTOR_PORT    = '/dev/ttyUSB2'   # Motor ESP32
+MOTOR_PORT    = '/dev/ttyUSB1'   # Motor ESP32
 
 BAUD = 115200
 
